@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>THE LADS · 2025/26 FPL Banter Centre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- BREAKING TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-label">BREAKING</div>
+  <div class="ticker-content">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-title">
+      <h1>THE LADS</h1>
+      <div class="subtitle">2025/26 SEASON · LIVE BANTER CENTRE</div>
+    </div>
+    <div class="masthead-meta">
+      <div class="meta-block">
+        <div class="meta-label">Gameweek</div>
+        <div class="meta-value" id="meta-gw">—</div>
+      </div>
+      <div class="meta-block">
+        <div class="meta-label">Leader</div>
+        <div class="meta-value" id="meta-leader">—</div>
+      </div>
+      <div class="meta-block">
+        <div class="meta-label">Lads</div>
+        <div class="meta-value">13</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav-tabs">
+  <button class="tab-btn active" data-tab="headlines">📰 HEADLINES</button>
+  <button class="tab-btn" data-tab="table">📊 TABLE</button>
+  <button class="tab-btn" data-tab="kroupi">🐐 KROUPI SHRINE</button>
+  <button class="tab-btn" data-tab="awards">🏆 AWARDS</button>
+  <button class="tab-btn" data-tab="managers">👥 MANAGERS</button>
+  <button class="tab-btn" data-tab="h2h">⚔️ HEAD TO HEAD</button>
+  <button class="tab-btn" data-tab="nerd">🤓 NERD ZONE</button>
+</nav>
+
+<main class="container">
+
+<!-- HEADLINES TAB -->
+<section class="tab-content active" id="tab-headlines">
+
+  <div class="hero-card">
+    <div class="hero-eyebrow">⚽ STORY OF THE SEASON</div>
+    <div class="hero-headline" id="hero-headline">Loading the carnage...</div>
+    <div class="hero-subline" id="hero-subline"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="banter-card big-card">
+      <div class="card-eyebrow">CURRENT STANDINGS</div>
+      <div id="mini-table"></div>
+      <button class="ghost-btn" onclick="switchTab('table')">FULL TABLE →</button>
+    </div>
+
+    <div class="banter-card big-card">
+      <div class="card-eyebrow">⚡ STAT OF THE MOMENT</div>
+      <div class="stat-rotator">
+        <div class="rotator-stat" id="rotator-stat">—</div>
+        <div class="rotator-name" id="rotator-name">—</div>
+        <div class="rotator-detail" id="rotator-detail">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2>🔥 TOP 5 BANTER AWARDS</h2>
+  </div>
+  <div class="awards-strip" id="top-awards"></div>
+
+  <div class="grid-2">
+    <div class="banter-card">
+      <div class="card-eyebrow">📈 BIGGEST GAMEWEEK SCORES</div>
+      <div id="biggest-gws"></div>
+    </div>
+    <div class="banter-card">
+      <div class="card-eyebrow">📉 LOWEST GAMEWEEK SCORES</div>
+      <div id="lowest-gws"></div>
+    </div>
+  </div>
+
+  <div class="banter-card full-width">
+    <div class="card-eyebrow">🎢 LEAGUE POSITION OVER TIME</div>
+    <div class="chart-wrap-large"><canvas id="rank-chart"></canvas></div>
+    <div class="chart-caption">Lower is better. Tyler's been camped at the top — proper bullying.</div>
+  </div>
+
+</section>
+
+<!-- TABLE TAB -->
+<section class="tab-content" id="tab-table">
+  <div class="banter-card full-width">
+    <div class="card-eyebrow">FULL LEAGUE TABLE · CLICK A LAD FOR THE FULL DOSSIER</div>
+    <table class="full-table" id="full-league-table"></table>
+  </div>
+
+  <div class="banter-card full-width">
+    <div class="card-eyebrow">📊 POINTS BREAKDOWN</div>
+    <div class="chart-wrap"><canvas id="points-breakdown-chart"></canvas></div>
+  </div>
+</section>
+
+<!-- KROUPI SHRINE -->
+<section class="tab-content" id="tab-kroupi">
+  <div class="kroupi-shrine">
+    <div class="kroupi-halo">
+      <div class="kroupi-name">JUNIOR KROUPI</div>
+      <div class="kroupi-club">AFC BOURNEMOUTH · £4.6m</div>
+    </div>
+    <div class="kroupi-stats" id="kroupi-stats"></div>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">📜 THE PROPHECY</div>
+    <div class="prose-block" id="kroupi-prose"></div>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">🗓️ THE BANDWAGON TIMELINE</div>
+    <div id="kroupi-timeline"></div>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">📈 KROUPI POINTS PER GAMEWEEK</div>
+    <div class="chart-wrap"><canvas id="kroupi-chart"></canvas></div>
+    <div class="chart-caption" id="kroupi-caption">—</div>
+  </div>
+
+  <div class="banter-card kroupi-counter-card">
+    <div class="card-eyebrow">⚠️ THE BENCH SHAME COUNTER</div>
+    <div class="big-counter" id="kroupi-bench-counter">0</div>
+    <div class="counter-label">Kroupi points Kieran left on the bench</div>
+    <div class="counter-detail" id="kroupi-bench-detail">—</div>
+  </div>
+</section>
+
+<!-- AWARDS TAB -->
+<section class="tab-content" id="tab-awards">
+  <div class="awards-intro">
+    <div class="awards-title">🏆 THE 2025/26 LADS AWARDS</div>
+    <div class="awards-subtitle">A formal ceremony nobody asked for</div>
+  </div>
+  <div id="awards-grid"></div>
+</section>
+
+<!-- MANAGERS TAB -->
+<section class="tab-content" id="tab-managers">
+  <div class="manager-picker">
+    <div class="card-eyebrow">SELECT A LAD</div>
+    <div id="manager-buttons"></div>
+  </div>
+  <div id="manager-detail"></div>
+</section>
+
+<!-- H2H TAB -->
+<section class="tab-content" id="tab-h2h">
+  <div class="banter-card">
+    <div class="card-eyebrow">⚔️ HEAD-TO-HEAD EXPLORER</div>
+    <div class="h2h-pickers">
+      <div class="h2h-side">
+        <label>LAD 1</label>
+        <select id="h2h-mgr1" class="big-select"></select>
+      </div>
+      <div class="h2h-vs">VS</div>
+      <div class="h2h-side">
+        <label>LAD 2</label>
+        <select id="h2h-mgr2" class="big-select"></select>
+      </div>
+    </div>
+    <div id="h2h-result"></div>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">🌡️ H2H HEATMAP · WHO BEATS WHO</div>
+    <div class="heatmap-scroll">
+      <div id="h2h-heatmap"></div>
+    </div>
+    <div class="chart-caption">Each cell = win % of row vs column. Darker green = more dominant.</div>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">💔 BIGGEST HUMILIATIONS</div>
+    <div id="biggest-h2h-margins"></div>
+  </div>
+</section>
+
+<!-- NERD ZONE -->
+<section class="tab-content" id="tab-nerd">
+  <div class="nerd-warning">
+    ⚠️ NERD ZONE · CONTAINS NUMBERS · NOT FOR THE CASUAL LADS
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">👑 CAPTAINCY EFFECTIVENESS</div>
+    <div class="card-desc">Pre-multiplier average. Higher = better captain picks. Vice regret = points lost when vice outscored captain.</div>
+    <table class="nerd-table" id="captaincy-table"></table>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">🪑 BENCH MISERY INDEX</div>
+    <div class="card-desc">Total points left on the bench, plus the worst single bench miss of the season.</div>
+    <table class="nerd-table" id="bench-table"></table>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">💸 HIT ROI</div>
+    <div class="card-desc">Did taking that -4 actually pay off? 5-GW window after each transfer.</div>
+    <table class="nerd-table" id="hits-roi-table"></table>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">🎴 CHIP ROI</div>
+    <div class="card-desc">Each chip's points compared to that GW's league average.</div>
+    <table class="nerd-table" id="chip-roi-table"></table>
+  </div>
+
+  <div class="banter-card">
+    <div class="card-eyebrow">🎯 BEST & WORST TRANSFERS</div>
+    <div class="card-desc">5-GW points window after each transfer. Net = points gained from incoming player minus what the outgoing player scored.</div>
+    <div id="transfers-leaderboard"></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer-bar">
+  <div>THE LADS · 2025/26 · DATA THROUGH GW<span id="footer-gw">—</span></div>
+  <div class="footer-meta">Built with regret · Refresh after GW38 for final wrap-up</div>
+</footer>
+
+<!-- LIBS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
