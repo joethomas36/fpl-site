@@ -9,7 +9,7 @@ const LAST_GW = D.last_gw;
 const TOTAL_GWS = ALL_GWS.length;
 const SEASON_OVER = LAST_GW >= 38;
 
-const KIERAN_NAME = 'Kieran Norton-Walder';
+const KIERAN_NAME = 'TikTok FC';
 
 // Sort managers by total points
 const RANKED_MIDS = Object.keys(MGRS).sort((a, b) => MGRS[b].total - MGRS[a].total);
