@@ -6,16 +6,23 @@ const D = window.FPL_DATA;
 const MGRS = D.managers;
 const ALL_GWS = D.all_gws;
 const LAST_GW = D.last_gw;
+const TOTAL_GWS = ALL_GWS.length;
+const SEASON_OVER = LAST_GW >= 38;
 
-const YOU_NAME = 'Joe Thomas';
 const KIERAN_NAME = 'Kieran Norton-Walder';
 
 // Sort managers by total points
 const RANKED_MIDS = Object.keys(MGRS).sort((a, b) => MGRS[b].total - MGRS[a].total);
 RANKED_MIDS.forEach((mid, i) => { MGRS[mid].rank = i + 1; });
-const YOU_MID = RANKED_MIDS.find(mid => MGRS[mid].name === YOU_NAME);
 const KIERAN_MID = RANKED_MIDS.find(mid => MGRS[mid].name === KIERAN_NAME);
 const LEADER_MID = RANKED_MIDS[0];
+const BOTTOM_MID = RANKED_MIDS[RANKED_MIDS.length - 1];
+
+// Per-player-per-GW points: total / (GWs played × 11 starting players)
+function avgPointsPerPlayer(m) {
+  const gwsPlayed = m.gw_history.length;
+  return gwsPlayed > 0 ? (m.total / (gwsPlayed * 11)) : 0;
+}
 
 // Short name helper
 function shortName(name) {
@@ -32,9 +39,7 @@ const MGR_COLORS = {};
 const PALETTE = ['#ffd400', '#e30613', '#00b341', '#00a3e0', '#ff7a00', '#8b3ffd', '#ff3d8a', '#f4f1e8', '#5dcaa5', '#f0997b', '#85b7eb', '#c0dd97', '#fac775'];
 RANKED_MIDS.forEach((mid, i) => { MGR_COLORS[mid] = PALETTE[i % PALETTE.length]; });
 
-// ========================================
-// CHART GLOBAL CONFIG
-// ========================================
+// Chart global config
 Chart.defaults.color = '#c9c5b8';
 Chart.defaults.borderColor = '#3a3a3a';
 Chart.defaults.font.family = 'Inter, sans-serif';
@@ -58,24 +63,21 @@ document.getElementById('meta-leader').textContent = shortName(MGRS[LEADER_MID].
 document.getElementById('footer-gw').textContent = LAST_GW;
 
 // ========================================
-// TICKER (SCROLLING BREAKING BANTER)
+// TICKER
 // ========================================
 function buildTicker() {
   const items = [];
 
-  // Kroupi narrative
+  items.push(`SEASON OVER · TYLER WINS THE TITLE WITH ${MGRS[LEADER_MID].total} PTS`);
   items.push(`KIERAN'S KROUPI BENCH SHAME COUNTER: ${D.kroupi.kieran_benched_pts} PTS LEFT ON THE BENCH`);
-
-  // Leader
-  items.push(`${shortName(MGRS[LEADER_MID].name).toUpperCase()} LEADS THE LADS WITH ${MGRS[LEADER_MID].total} PTS`);
 
   // Worst hit-taker
   const worstHits = RANKED_MIDS.slice().sort((a,b) => MGRS[b].hits_total - MGRS[a].hits_total)[0];
-  items.push(`${shortName(MGRS[worstHits].name).toUpperCase()} HAS THROWN AWAY ${MGRS[worstHits].hits_total} POINTS IN HITS`);
+  items.push(`${shortName(MGRS[worstHits].name).toUpperCase()} BURNT ${MGRS[worstHits].hits_total} PTS IN HITS`);
 
   // Best bench
   const bestBench = RANKED_MIDS.slice().sort((a,b) => MGRS[a].bench_total - MGRS[b].bench_total)[0];
-  items.push(`${shortName(MGRS[bestBench].name).toUpperCase()} ONLY ${MGRS[bestBench].bench_total} BENCH PTS · BROKE FPL`);
+  items.push(`${shortName(MGRS[bestBench].name).toUpperCase()} ONLY ${MGRS[bestBench].bench_total} BENCH PTS · BENCH-MASTER`);
 
   // Highest GW score
   let topGw = { pts: 0, name: '', gw: 0 };
@@ -84,15 +86,14 @@ function buildTicker() {
   });
   items.push(`HIGHEST GW SCORE: ${shortName(topGw.name).toUpperCase()} ${topGw.pts} IN GW${topGw.gw}`);
 
-  // Worst chip use
-  items.push(`BRENDAN TC'D WOLTEMADE IN GW10 · NEVER FORGET`);
-
-  // Set & forget
+  // Set & forget club
   const noHits = RANKED_MIDS.filter(mid => MGRS[mid].hits_total === 0).map(mid => shortName(MGRS[mid].name));
   if (noHits.length) items.push(`SET & FORGET CLUB: ${noHits.join(' & ').toUpperCase()}`);
 
+  // Wooden spoon
+  items.push(`WOODEN SPOON: ${shortName(MGRS[BOTTOM_MID].name).toUpperCase()} · ${MGRS[BOTTOM_MID].total} PTS`);
+
   const html = items.map(t => `<span>${t}</span>`).join('');
-  // duplicate for seamless loop
   document.getElementById('ticker-track').innerHTML = html + html;
 }
 buildTicker();
@@ -104,24 +105,25 @@ function buildHero() {
   const lead = MGRS[LEADER_MID];
   const second = MGRS[RANKED_MIDS[1]];
   const gap = lead.total - second.total;
-  const youData = MGRS[YOU_MID];
-  const youGap = lead.total - youData.total;
+
+  // League-wide avg points per player
+  const leagueAvgPerPlayer = RANKED_MIDS.reduce((s, mid) => s + avgPointsPerPlayer(MGRS[mid]), 0) / RANKED_MIDS.length;
 
   const headlines = [
     {
-      h: `${shortName(lead.name).toUpperCase()} WIRTZ-ING THE TITLE`,
-      s: `${lead.total} pts · leading by ${gap} from ${shortName(second.name)} with ${ALL_GWS.length === 38 ? 'the season done' : `${38 - LAST_GW} GW${38-LAST_GW===1?'':'s'} left`}. You're ${youGap} behind in ${MGRS[YOU_MID].rank}${ord(MGRS[YOU_MID].rank)}.`
+      h: `${shortName(lead.name).toUpperCase()} WINS THE LEAGUE`,
+      s: `${lead.total} pts · finished ${gap} clear of ${shortName(second.name)}. ${lead.weeks_at_top} of ${TOTAL_GWS} weeks spent at #1 · proper dominance.`
     },
     {
       h: `KROUPI JR · A VINDICATION TOUR`,
-      s: `Kieran was right all along. The £4.6m forward has banged in ${D.kroupi.goals} goals for ${D.kroupi.season_pts} points — the most of any sub-£5m forward in the game. Five lads now own him. Kieran was first.`
+      s: `Kieran was right all along. The £4.6m forward banged in ${D.kroupi.goals} goals for ${D.kroupi.season_pts} points — the highest-scoring sub-£5m forward in the entire game. The bandwagon got crowded fast.`
     },
     {
-      h: `THE LADS · ${ALL_GWS.length} GAMEWEEKS OF CARNAGE`,
-      s: `13 managers, 535 transfers, 38 chips played, hundreds of points binned, one shrine to a French teenager. This is the season in numbers.`
+      h: `THE LEAGUE · BY THE NUMBERS`,
+      s: `13 managers, ${TOTAL_GWS} gameweeks, an average of ${leagueAvgPerPlayer.toFixed(2)} points per player per game. Plus hundreds of points binned on hits and benches. One shrine to a French teenager.`
     }
   ];
-  // Rotate every 8s
+
   let idx = 0;
   function show() {
     document.getElementById('hero-headline').textContent = headlines[idx].h;
@@ -136,14 +138,13 @@ buildHero();
 function ord(n) { const s=['th','st','nd','rd'], v=n%100; return (s[(v-20)%10]||s[v]||s[0]); }
 
 // ========================================
-// MINI TABLE (HEADLINES)
+// MINI TABLE
 // ========================================
 function buildMiniTable() {
   const html = RANKED_MIDS.map(mid => {
     const m = MGRS[mid];
-    const youCls = m.name === YOU_NAME ? 'is-you' : '';
     return `
-      <div class="mini-row ${youCls}" onclick="selectManager('${mid}'); switchTab('managers');">
+      <div class="mini-row" onclick="selectManager('${mid}'); switchTab('managers');">
         <div class="mini-rank">${m.rank}</div>
         <div class="mini-name">${shortName(m.name)}</div>
         <div class="mini-pts">${m.total}</div>
@@ -157,47 +158,39 @@ buildMiniTable();
 // STAT ROTATOR
 // ========================================
 function buildRotator() {
-  // worst single bench
   let worstBench = { pts: 0, mid: null, gw: 0 };
   RANKED_MIDS.forEach(mid => {
     const w = MGRS[mid].worst_bench_gw;
     if (w.bench > worstBench.pts) worstBench = { pts: w.bench, mid, gw: w.gw };
   });
-  // biggest miss (single benched player)
   let biggestMiss = { pts: 0, mid: null };
   RANKED_MIDS.forEach(mid => {
     const m = MGRS[mid].biggest_bench_miss;
     if (m.pts > biggestMiss.pts) biggestMiss = { ...m, mid };
   });
-  // most captaincy hauls
   const capHauls = RANKED_MIDS.slice().sort((a,b) => MGRS[b].cap_hauls - MGRS[a].cap_hauls)[0];
-  // worst captain rate
   const capBlanks = RANKED_MIDS.slice().sort((a,b) => MGRS[b].cap_blanks - MGRS[a].cap_blanks)[0];
-  // most differential
-  // most hits
   const mostHits = RANKED_MIDS.slice().sort((a,b) => MGRS[b].hits_total - MGRS[a].hits_total)[0];
-  // most weeks at top
   const mostWeeks = RANKED_MIDS.slice().sort((a,b) => MGRS[b].weeks_at_top - MGRS[a].weeks_at_top)[0];
-  // best transfer
   let bestT = { net_5gw: -999, mid: null };
   RANKED_MIDS.forEach(mid => {
     if (MGRS[mid].best_transfer && MGRS[mid].best_transfer.net_5gw > bestT.net_5gw) bestT = { ...MGRS[mid].best_transfer, mid };
   });
-  // value rise
   const richest = RANKED_MIDS.slice().sort((a,b) => MGRS[b].final_value - MGRS[a].final_value)[0];
-  // most consistent
   const consistent = RANKED_MIDS.slice().sort((a,b) => MGRS[a].std - MGRS[b].std)[0];
+  const bestPpp = RANKED_MIDS.slice().sort((a,b) => avgPointsPerPlayer(MGRS[b]) - avgPointsPerPlayer(MGRS[a]))[0];
 
   const stats = [
     { num: worstBench.pts, name: shortName(MGRS[worstBench.mid].name), detail: `points left on the bench in GW${worstBench.gw}` },
     { num: biggestMiss.pts, name: `${biggestMiss.player} · ${shortName(MGRS[biggestMiss.mid].name)}`, detail: `the single biggest bench miss of the season` },
     { num: MGRS[capHauls].cap_hauls, name: shortName(MGRS[capHauls].name), detail: `captaincy hauls (10+ pts) — most in the league` },
-    { num: MGRS[capBlanks].cap_blanks, name: shortName(MGRS[capBlanks].name), detail: `captain blanks (≤4 pts) — worst armband in the lads` },
+    { num: MGRS[capBlanks].cap_blanks, name: shortName(MGRS[capBlanks].name), detail: `captain blanks (≤4 pts) — worst armband in the league` },
     { num: MGRS[mostHits].hits_total, name: shortName(MGRS[mostHits].name), detail: `points binned on transfer hits this season` },
-    { num: MGRS[mostWeeks].weeks_at_top, name: shortName(MGRS[mostWeeks].name), detail: `weeks at the top of the mini-league` },
+    { num: MGRS[mostWeeks].weeks_at_top, name: shortName(MGRS[mostWeeks].name), detail: `weeks spent at the top of the league` },
     { num: `+${bestT.net_5gw}`, name: `${bestT.in_name} → ${bestT.out_name}`, detail: `${shortName(MGRS[bestT.mid].name)}'s best transfer (5GW window)` },
-    { num: `£${MGRS[richest].final_value}m`, name: shortName(MGRS[richest].name), detail: `richest squad in the league right now` },
+    { num: `£${MGRS[richest].final_value}m`, name: shortName(MGRS[richest].name), detail: `richest final squad value in the league` },
     { num: `±${MGRS[consistent].std}`, name: shortName(MGRS[consistent].name), detail: `most consistent week-to-week scorer` },
+    { num: avgPointsPerPlayer(MGRS[bestPpp]).toFixed(2), name: shortName(MGRS[bestPpp].name), detail: `points per starting player per gameweek — top in the league` },
     { num: D.kroupi.kieran_benched_pts, name: 'KIERAN N-W', detail: `Kroupi points he benched · the bench shame` },
   ];
 
@@ -223,28 +216,19 @@ buildRotator();
 // TOP AWARDS STRIP
 // ========================================
 function buildTopAwards() {
-  // worst bench miss biggest
   let worstBench = { pts: 0, mid: null };
   RANKED_MIDS.forEach(mid => {
     if (MGRS[mid].bench_total > worstBench.pts) worstBench = { pts: MGRS[mid].bench_total, mid };
   });
-
-  // wally with the most hits
   const mostHits = RANKED_MIDS.slice().sort((a,b) => MGRS[b].hits_total - MGRS[a].hits_total)[0];
-
-  // best bench (least)
   const bestBench = RANKED_MIDS.slice().sort((a,b) => MGRS[a].bench_total - MGRS[b].bench_total)[0];
-
-  // top of the table for most weeks
   const mostWeeks = RANKED_MIDS.slice().sort((a,b) => MGRS[b].weeks_at_top - MGRS[a].weeks_at_top)[0];
-
-  // biggest captain hauler
   const capHauls = RANKED_MIDS.slice().sort((a,b) => MGRS[b].cap_hauls - MGRS[a].cap_hauls)[0];
 
   const cards = [
-    { icon: '🪑', title: 'BENCH WARMER', winner: shortName(MGRS[worstBench.mid].name), detail: `${worstBench.pts} bench pts wasted · could've changed his season` },
-    { icon: '💸', title: 'WALLY WITH THE HITS', winner: shortName(MGRS[mostHits].name), detail: `${MGRS[mostHits].hits_total} pts binned · the most reckless transfer policy in the lads` },
-    { icon: '🧠', title: 'GAFFER OF THE LADS', winner: shortName(MGRS[mostWeeks].name), detail: `${MGRS[mostWeeks].weeks_at_top} weeks at the top · ran the league` },
+    { icon: '🪑', title: 'BENCH WARMER', winner: shortName(MGRS[worstBench.mid].name), detail: `${worstBench.pts} bench pts wasted · could've changed the season` },
+    { icon: '💸', title: 'WALLY WITH THE HITS', winner: shortName(MGRS[mostHits].name), detail: `${MGRS[mostHits].hits_total} pts binned · the most reckless transfer policy in the league` },
+    { icon: '🧠', title: 'GAFFER OF THE SEASON', winner: shortName(MGRS[mostWeeks].name), detail: `${MGRS[mostWeeks].weeks_at_top} weeks at the top · ran the league` },
     { icon: '⚓', title: 'BENCH WHISPERER', winner: shortName(MGRS[bestBench].name), detail: `only ${MGRS[bestBench].bench_total} pts left on the bench all season · what is this sorcery` },
     { icon: '👑', title: 'CAPTAIN MARVEL', winner: shortName(MGRS[capHauls].name), detail: `${MGRS[capHauls].cap_hauls} captain hauls · proper armband selection` },
   ];
@@ -264,7 +248,6 @@ buildTopAwards();
 // BIGGEST/LOWEST GW SCORES
 // ========================================
 function buildGwScoreLists() {
-  // collect all GWs across all managers
   const all = [];
   RANKED_MIDS.forEach(mid => {
     MGRS[mid].gw_history.forEach(h => {
@@ -297,7 +280,7 @@ function buildRankChart() {
     tension: 0.25,
     pointRadius: 0,
     pointHoverRadius: 5,
-    borderWidth: mid === YOU_MID ? 3 : 1.5,
+    borderWidth: 1.5,
   }));
 
   new Chart(document.getElementById('rank-chart'), {
@@ -309,9 +292,7 @@ function buildRankChart() {
       interaction: { mode: 'nearest', intersect: false },
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 } } },
-        tooltip: { 
-          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}${ord(ctx.parsed.y)}` }
-        }
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}${ord(ctx.parsed.y)}` } }
       },
       scales: {
         x: { type: 'linear', title: { display: true, text: 'Gameweek', color: '#888' }, ticks: { stepSize: 2 } },
@@ -333,7 +314,8 @@ function buildFullTable() {
       <th>Manager</th>
       <th>Team Name</th>
       <th class="right">Pts</th>
-      <th class="right">Avg</th>
+      <th class="right">Avg/GW</th>
+      <th class="right">Pts/player/GW</th>
       <th class="right">Bench</th>
       <th class="right">Hits</th>
       <th class="right">Trf</th>
@@ -342,13 +324,14 @@ function buildFullTable() {
     </tr></thead>`;
   const rows = RANKED_MIDS.map(mid => {
     const m = MGRS[mid];
-    const isYou = m.name === YOU_NAME ? 'is-you' : '';
-    return `<tr class="${isYou}" onclick="selectManager('${mid}'); switchTab('managers');">
+    const ppp = avgPointsPerPlayer(m).toFixed(2);
+    return `<tr onclick="selectManager('${mid}'); switchTab('managers');">
       <td class="rank-cell">${m.rank}</td>
       <td class="name-cell">${shortName(m.name)}</td>
       <td class="team-cell">${m.team_name}</td>
       <td class="right pts-cell">${m.total}</td>
       <td class="right">${m.mean}</td>
+      <td class="right">${ppp}</td>
       <td class="right">${m.bench_total}</td>
       <td class="right">${m.hits_total ? '-'+m.hits_total : '0'}</td>
       <td class="right">${m.transfers_total}</td>
@@ -397,7 +380,6 @@ buildPointsBreakdownChart();
 function buildKroupi() {
   const k = D.kroupi;
 
-  // stats grid
   const stats = [
     { n: k.season_pts, l: 'TOTAL PTS' },
     { n: k.goals, l: 'GOALS' },
@@ -411,10 +393,8 @@ function buildKroupi() {
     <div class="kroupi-stat"><div class="kroupi-stat-num">${s.n}</div><div class="kroupi-stat-lbl">${s.l}</div></div>
   `).join('');
 
-  // prose
-  const ownerCount = Object.values(k.ownership_by_gw).reduce((set, owners) => { owners.forEach(o => set.add(o.name)); return set; }, new Set()).size;
+  // first owner GW
   const firstOwnerGw = Math.min(...Object.entries(k.ownership_by_gw).filter(([gw, owners]) => owners.length > 0).map(([gw]) => +gw));
-  const firstOwners = k.ownership_by_gw[firstOwnerGw];
   const secondToJoin = (() => {
     for (const gw of ALL_GWS) {
       const owners = k.ownership_by_gw[gw] || [];
@@ -422,21 +402,19 @@ function buildKroupi() {
     }
     return null;
   })();
+  const ownerCount = new Set(Object.values(k.ownership_by_gw).flatMap(owners => owners.map(o => o.name))).size;
 
   document.getElementById('kroupi-prose').innerHTML = `
-    <p>The legend was born when <strong>${shortName(KIERAN_NAME)}</strong> brought in Junior Kroupi at <strong>GW${firstOwnerGw}</strong>. The lads laughed. TikTok strategy. Vibes-based selection. No proper football knowledge. Pure noise.</p>
-    <p>Kroupi has now scored <strong>${k.season_pts} points</strong> at <strong>£${k.cost}m</strong>. He is the <strong>highest-scoring forward under £5m in the entire game</strong>. ${secondToJoin ? `${shortName(secondToJoin.name)} jumped on the bandwagon at GW${secondToJoin.gw} — ${secondToJoin.gw - firstOwnerGw} gameweeks late.` : ''} ${ownerCount} different lads have owned him since.</p>
-    <p>And yet Kieran sits in <strong>${ord(MGRS[KIERAN_MID].rank)} place</strong>. Because he <strong>benched Kroupi 12 times</strong> and missed <strong>${k.kieran_benched_pts} points</strong> while they sat there. He was right about the player and still cocked it up. Genuine masterclass.</p>
+    <p>The legend was born when <strong>${shortName(KIERAN_NAME)}</strong> brought in Junior Kroupi at <strong>GW${firstOwnerGw}</strong>. The league laughed. TikTok strategy. Vibes-based selection. No proper football knowledge. Pure noise.</p>
+    <p>Kroupi finished the season on <strong>${k.season_pts} points</strong> at <strong>£${k.cost}m</strong> — the <strong>highest-scoring forward under £5m in the entire game</strong>. ${secondToJoin ? `${shortName(secondToJoin.name)} jumped on the bandwagon at GW${secondToJoin.gw} — ${secondToJoin.gw - firstOwnerGw} gameweeks late.` : ''} ${ownerCount} different managers owned him at some point.</p>
+    <p>And yet Kieran finished in <strong>${ord(MGRS[KIERAN_MID].rank)} place</strong>. Because he <strong>benched Kroupi repeatedly</strong> and missed <strong>${k.kieran_benched_pts} points</strong> while the lad sat there scoring. Right about the player, cocked up the execution. Genuine masterclass in self-sabotage.</p>
   `;
 
   // Timeline
   const events = [];
   let prevOwners = [];
-  let lastChip = '';
   ALL_GWS.forEach(gw => {
     const owners = k.ownership_by_gw[gw] || [];
-    const ownerNames = owners.map(o => o.name).sort();
-    const prevNames = prevOwners.map(o => o.name).sort();
     const newOwners = owners.filter(o => !prevOwners.find(p => p.name === o.name));
     const dropped = prevOwners.filter(p => !owners.find(o => o.name === p.name));
     if (newOwners.length) {
@@ -455,7 +433,7 @@ function buildKroupi() {
   });
 
   const finalOwners = k.ownership_by_gw[LAST_GW] || [];
-  events.push({ gw: LAST_GW, text: `Currently owned by <strong>${finalOwners.length} lads</strong>: ${finalOwners.map(o => shortName(o.name)).join(', ')}` });
+  events.push({ gw: LAST_GW, text: `Final-day owners: <strong>${finalOwners.length} managers</strong>${finalOwners.length ? ' — ' + finalOwners.map(o => shortName(o.name)).join(', ') : ''}` });
 
   document.getElementById('kroupi-timeline').innerHTML = events.map(e => `
     <div class="timeline-row">
@@ -486,32 +464,20 @@ function buildKroupi() {
       scales: { x: { ticks: { color: '#888' } }, y: { beginAtZero: true } }
     }
   });
-  const totalK = k.gw_history.reduce((s,g) => s+g.pts, 0);
   const haulCount = k.gw_history.filter(g => g.pts >= 8).length;
-  document.getElementById('kroupi-caption').textContent = `${haulCount} hauls (8+ pts) across the season. Green bars = hauls, yellow = decent, grey = blank.`;
+  document.getElementById('kroupi-caption').textContent = `${haulCount} hauls (8+ pts) across the season. Green bars = hauls, yellow = decent, grey = blanks.`;
 
   // Bench counter
   document.getElementById('kroupi-bench-counter').textContent = k.kieran_benched_pts;
-  document.getElementById('kroupi-bench-detail').textContent = `Kieran benched Kroupi in 12 of the 27 GWs he owned him. Across those benchings, the lad scored ${k.kieran_benched_pts} points sat on the sofa. Tragic.`;
+  document.getElementById('kroupi-bench-detail').textContent = `Across the season, Kroupi scored ${k.kieran_benched_pts} points while sat on Kieran's bench. Right player, wrong spot.`;
 }
 buildKroupi();
 
 // ========================================
-// AWARDS PAGE (FULL CEREMONY)
+// AWARDS PAGE
 // ========================================
 function buildAwards() {
-  // helpers
-  const sortBy = (key, asc=false) => {
-    return RANKED_MIDS.slice().sort((a,b) => asc ? MGRS[a][key]-MGRS[b][key] : MGRS[b][key]-MGRS[a][key]);
-  };
-  const findExtreme = (fn, max=true) => {
-    let best = { val: max ? -Infinity : Infinity, mid: null };
-    RANKED_MIDS.forEach(mid => {
-      const v = fn(MGRS[mid]);
-      if ((max && v > best.val) || (!max && v < best.val)) best = { val: v, mid };
-    });
-    return best;
-  };
+  const sortBy = (key, asc=false) => RANKED_MIDS.slice().sort((a,b) => asc ? MGRS[a][key]-MGRS[b][key] : MGRS[b][key]-MGRS[a][key]);
 
   const champ = MGRS[RANKED_MIDS[0]];
   const wooden = MGRS[RANKED_MIDS[RANKED_MIDS.length-1]];
@@ -528,6 +494,9 @@ function buildAwards() {
   const richest = MGRS[sortBy('final_value')[0]];
   const poorest = MGRS[sortBy('final_value', true)[0]];
 
+  // Best points per player per GW
+  const bestPpp = RANKED_MIDS.slice().sort((a,b) => avgPointsPerPlayer(MGRS[b]) - avgPointsPerPlayer(MGRS[a]))[0];
+
   // Worst single bench miss
   let worstMiss = { pts: 0, mid: null };
   RANKED_MIDS.forEach(mid => {
@@ -542,42 +511,31 @@ function buildAwards() {
     if (MGRS[mid].worst_transfer && MGRS[mid].worst_transfer.net_5gw < worstT.net_5gw) worstT = { ...MGRS[mid].worst_transfer, mid };
   });
 
-  // Worst TC
+  // Best/worst TC
   let worstTC = { tc_pts: Infinity, mid: null };
-  RANKED_MIDS.forEach(mid => {
-    MGRS[mid].tc_results.forEach(t => {
-      if (t.tc_pts < worstTC.tc_pts) worstTC = { ...t, mid };
-    });
-  });
-
-  // Best TC
   let bestTC = { tc_pts: -Infinity, mid: null };
   RANKED_MIDS.forEach(mid => {
     MGRS[mid].tc_results.forEach(t => {
+      if (t.tc_pts < worstTC.tc_pts) worstTC = { ...t, mid };
       if (t.tc_pts > bestTC.tc_pts) bestTC = { ...t, mid };
     });
   });
 
   // Worst BB
   let worstBB = { team_pts: Infinity, mid: null };
-  let bestBB = { team_pts: -Infinity, mid: null };
   RANKED_MIDS.forEach(mid => {
     MGRS[mid].bb_results.forEach(b => {
       if (b.team_pts < worstBB.team_pts) worstBB = { ...b, mid };
-      if (b.team_pts > bestBB.team_pts) bestBB = { ...b, mid };
     });
   });
 
-  // Most weeks at top
   const topWeeks = MGRS[sortBy('weeks_at_top')[0]];
 
-  // Highest GW
   let topGw = { pts: 0, mid: null };
   RANKED_MIDS.forEach(mid => {
     if (MGRS[mid].best_gw.pts > topGw.pts) topGw = { ...MGRS[mid].best_gw, mid };
   });
 
-  // Lowest GW
   let lowGw = { pts: Infinity, mid: null };
   RANKED_MIDS.forEach(mid => {
     if (MGRS[mid].worst_gw.pts < lowGw.pts) lowGw = { ...MGRS[mid].worst_gw, mid };
@@ -585,24 +543,30 @@ function buildAwards() {
 
   const awards = [
     {
-      cat: 'serious', icon: '🥇', title: 'CHAMPION OF THE LADS',
+      cat: 'serious', icon: '🥇', title: 'CHAMPION',
       winner: shortName(champ.name), stat: `${champ.total} pts · ${champ.weeks_at_top} weeks at #1`,
-      roast: `Camped at the top all season. The rest of the lads were pretending they had a chance. They didn't.`
+      roast: `Top of the league. The rest were pretending they had a chance. They didn't.`
     },
     {
       cat: 'shame', icon: '🥄', title: 'WOODEN SPOON',
-      winner: shortName(wooden.name), stat: `${wooden.total} pts · ${wooden.rank}${ord(wooden.rank)} place`,
-      roast: `Bottom of the lads. ${wooden.hits_total === 0 ? 'No transfer hits at least — failed gracefully.' : `Took ${wooden.hits_total} pts in hits to get here. Truly committed to the bit.`}`
+      winner: shortName(wooden.name), stat: `${wooden.total} pts · 13th place`,
+      roast: `Bottom of the league. ${wooden.hits_total === 0 ? 'No transfer hits at least — failed gracefully.' : `Took ${wooden.hits_total} pts in hits to get here. Truly committed to the bit.`}`
+    },
+    {
+      cat: 'serious', icon: '⭐', title: 'BEST POINTS PER PLAYER',
+      winner: shortName(MGRS[bestPpp].name),
+      stat: `${avgPointsPerPlayer(MGRS[bestPpp]).toFixed(2)} pts per starting player per gameweek`,
+      roast: `Every player on the pitch pulling their weight. The most efficient squad in the league.`
     },
     {
       cat: '', icon: '🪑', title: 'BENCH TRAGEDY',
       winner: shortName(mostBench.name), stat: `${mostBench.bench_total} pts left on the bench`,
-      roast: `Could've been ${mostBench.rank > 3 ? 'a contender' : 'champion'} if he'd just played his actual XV. The bench was where his points went to die.`
+      roast: `${mostBench.rank > 3 ? 'Could\'ve been a contender' : 'Champion, but with regrets'} if he\'d just played his actual XV. The bench was where the points went to die.`
     },
     {
       cat: 'serious', icon: '⚓', title: 'BENCH WHISPERER',
       winner: shortName(leastBench.name), stat: `only ${leastBench.bench_total} pts wasted`,
-      roast: `Either the most attentive lad in the group chat or has cracked some code none of us know about. Suspicious. Investigate.`
+      roast: `Either the most attentive manager in the league or cracked some code none of us know about. Suspicious. Investigate.`
     },
     {
       cat: 'shame', icon: '💸', title: 'WALLY WITH THE TRANSFERS',
@@ -611,9 +575,9 @@ function buildAwards() {
     },
     {
       cat: 'serious', icon: '🧘', title: 'SET & FORGET CLUB',
-      winner: noHits.map(m => shortName(m.name)).join(' & '),
+      winner: noHits.map(m => shortName(m.name)).join(' & ') || 'NOBODY',
       stat: 'zero transfer hits all season',
-      roast: `Disciplined. Patient. Or just couldn't be bothered. Either way: 0 hits. Buddhist-tier acceptance of the team you drafted in August.`
+      roast: `Disciplined. Patient. Or just couldn't be bothered. Either way: 0 hits across the season.`
     },
     {
       cat: '', icon: '📈', title: 'HIGHEST GAMEWEEK',
@@ -650,21 +614,21 @@ function buildAwards() {
       winner: shortName(MGRS[worstT.mid].name), stat: `${worstT.out_name} out for ${worstT.in_name} · ${worstT.net_5gw} pts (5 GW window)`,
       roast: `Sold the right player at the worst possible time. Genuinely cursed timing.`
     },
-    {
+    ...(worstTC.mid ? [{
       cat: 'shame', icon: '🪦', title: 'TRIPLE CAPTAIN GRAVEYARD',
       winner: shortName(MGRS[worstTC.mid].name), stat: `${worstTC.player} TC'd in GW${worstTC.gw} · ${worstTC.player_pts} pts (×3)`,
-      roast: `The chip was supposed to be the difference. Instead it was just three times zero.`
-    },
-    {
+      roast: `The chip was supposed to be the difference. Instead it was just three times not much.`
+    }] : []),
+    ...(bestTC.mid ? [{
       cat: 'serious', icon: '💎', title: 'TRIPLE CAPTAIN MASTERCLASS',
       winner: shortName(MGRS[bestTC.mid].name), stat: `${bestTC.player} TC'd in GW${bestTC.gw} · ${bestTC.player_pts} pts (×3 = ${bestTC.tc_pts})`,
       roast: `Pulled the trigger at the right moment on the right man. Vibes were impeccable.`
-    },
-    {
+    }] : []),
+    ...(worstBB.mid ? [{
       cat: 'shame', icon: '😴', title: 'BENCH BOOST FACEPLANT',
       winner: shortName(MGRS[worstBB.mid].name), stat: `Bench Boost in GW${worstBB.gw} · ${worstBB.team_pts} pts total`,
       roast: `Blew the chip in a blank GW. The whole squad turned up cold. Brutal.`
-    },
+    }] : []),
     {
       cat: '', icon: '🪑', title: 'WORST SINGLE BENCH MISS',
       winner: `${worstMiss.player} (${shortName(MGRS[worstMiss.mid].name)})`,
@@ -684,7 +648,7 @@ function buildAwards() {
     {
       cat: 'serious', icon: '💰', title: 'TEAM VALUE TYCOON',
       winner: shortName(richest.name), stat: `£${richest.final_value}m squad`,
-      roast: `Bought low, sold high, watched the budget players surge. The Warren Buffett of the lads.`
+      roast: `Bought low, sold high, watched the budget players surge. The Warren Buffett of the league.`
     },
     {
       cat: 'shame', icon: '📉', title: 'BUDGET BIN FIRE',
@@ -698,13 +662,13 @@ function buildAwards() {
     },
     {
       cat: 'serious', icon: '👑', title: 'WEEKS AT THE SUMMIT',
-      winner: shortName(topWeeks.name), stat: `${topWeeks.weeks_at_top} of ${ALL_GWS.length} weeks at #1`,
+      winner: shortName(topWeeks.name), stat: `${topWeeks.weeks_at_top} of ${TOTAL_GWS} weeks at #1`,
       roast: `Held the lead from the start. Never let it go. The benchmark.`
     },
     {
       cat: '', icon: '🔮', title: 'THE TIKTOK PROPHET',
-      winner: shortName(KIERAN_NAME), stat: `Kroupi Jr · 103 pts · ${D.kroupi.kieran_haul} for the boy himself`,
-      roast: `Followed the vibes. Was vindicated. Then benched the lad ${(MGRS[KIERAN_MID].team_name)} for 12 GWs and lost ${D.kroupi.kieran_benched_pts} points doing it. Foresight without follow-through is the cruellest kind of right.`
+      winner: shortName(KIERAN_NAME), stat: `Kroupi Jr · ${D.kroupi.season_pts} pts · ${D.kroupi.kieran_haul} for the boy himself`,
+      roast: `Followed the vibes. Was vindicated. Then benched the lad for half the season and lost ${D.kroupi.kieran_benched_pts} points doing it. Foresight without follow-through is the cruellest kind of right.`
     },
   ];
 
@@ -737,8 +701,8 @@ function selectManager(mid) {
   const m = MGRS[mid];
   const detail = document.getElementById('manager-detail');
 
-  // Generate roast based on stats
   const roast = generateRoast(mid);
+  const ppp = avgPointsPerPlayer(m).toFixed(2);
 
   detail.innerHTML = `
     <div class="mgr-detail-header">
@@ -747,6 +711,7 @@ function selectManager(mid) {
       <div class="mgr-rank-badge">${m.rank}${ord(m.rank)} OF 13 · ${m.total} PTS</div>
       <div class="mgr-stats-grid">
         <div class="mgr-stat"><div class="mgr-stat-num">${m.mean}</div><div class="mgr-stat-lbl">AVG/GW</div></div>
+        <div class="mgr-stat"><div class="mgr-stat-num">${ppp}</div><div class="mgr-stat-lbl">PTS/PLAYER/GW</div></div>
         <div class="mgr-stat"><div class="mgr-stat-num">${m.bench_total}</div><div class="mgr-stat-lbl">BENCH PTS</div></div>
         <div class="mgr-stat"><div class="mgr-stat-num">${m.transfers_total}</div><div class="mgr-stat-lbl">TRANSFERS</div></div>
         <div class="mgr-stat"><div class="mgr-stat-num">-${m.hits_total}</div><div class="mgr-stat-lbl">HITS</div></div>
@@ -770,11 +735,11 @@ function selectManager(mid) {
     <div class="grid-2">
       <div class="banter-card">
         <div class="card-eyebrow">🎯 BEST TRANSFER</div>
-        ${m.best_transfer ? renderTransfer(m.best_transfer, 'good') : '<p style="color:#888">No transfers yet.</p>'}
+        ${m.best_transfer ? renderTransfer(m.best_transfer, 'good') : '<p style="color:#888">No transfers made.</p>'}
       </div>
       <div class="banter-card">
         <div class="card-eyebrow">💩 WORST TRANSFER</div>
-        ${m.worst_transfer ? renderTransfer(m.worst_transfer, 'bad') : '<p style="color:#888">No transfers yet.</p>'}
+        ${m.worst_transfer ? renderTransfer(m.worst_transfer, 'bad') : '<p style="color:#888">No transfers made.</p>'}
       </div>
     </div>
 
@@ -789,7 +754,6 @@ function selectManager(mid) {
     </div>
   `;
 
-  // chart
   const ctx = document.getElementById('mgr-gw-chart');
   if (currentMgrChart) currentMgrChart.destroy();
   const labels = m.gw_history.map(h => 'GW' + h.gw);
@@ -822,10 +786,15 @@ function renderTransfer(t, type) {
 }
 
 function renderChipLog(m) {
-  const allChips = [...m.tc_results.map(c => ({...c, type: '3xC'})), ...m.bb_results.map(c => ({...c, type: 'BB'})), ...m.fh_results.map(c => ({...c, type: 'FH'})), ...m.wc_results.map(c => ({...c, type: 'WC'}))];
+  const allChips = [
+    ...m.tc_results.map(c => ({...c, type: '3xC'})),
+    ...m.bb_results.map(c => ({...c, type: 'BB'})),
+    ...m.fh_results.map(c => ({...c, type: 'FH'})),
+    ...m.wc_results.map(c => ({...c, type: 'WC'}))
+  ];
   allChips.sort((a,b) => a.gw - b.gw);
   const chipNames = { '3xC': 'Triple Captain', 'BB': 'Bench Boost', 'FH': 'Free Hit', 'WC': 'Wildcard' };
-  if (!allChips.length) return '<p style="color:#888">No chips played yet.</p>';
+  if (!allChips.length) return '<p style="color:#888">No chips played.</p>';
   const avgPts = (gw) => D.league_avg_per_gw[gw] || 0;
   return `<div style="display: flex; flex-direction: column; gap: 6px;">${allChips.map(c => {
     const detail = c.type === '3xC' ? `<strong>${c.player}</strong> (${c.player_pts} × 3 = ${c.tc_pts})` : `${c.team_pts} pts (avg: ${avgPts(c.gw)})`;
@@ -839,7 +808,6 @@ function renderCaptainLog(m) {
   const recent = m.captain_log.slice(-10);
   return `<div style="display:flex; flex-direction:column; gap:4px; font-size:13px;">
     ${recent.map(c => {
-      const cls = c.raw_pts >= 10 ? 'good' : c.raw_pts <= 4 ? 'bad' : '';
       const tag = c.is_tc ? ' <span style="color:#ff7a00;font-weight:700">[3×C]</span>' : '';
       return `<div style="display:grid; grid-template-columns: 60px 1fr 50px; padding: 6px 8px; background: var(--ss-graphite); border-left: 3px solid ${c.raw_pts >= 10 ? '#00b341' : c.raw_pts <= 4 ? '#e30613' : '#ffd400'};">
         <div style="font-family: var(--font-display); color: #ffd400;">GW${c.gw}</div>
@@ -853,19 +821,23 @@ function renderCaptainLog(m) {
 function generateRoast(mid) {
   const m = MGRS[mid];
   const lines = [];
+  const ppp = avgPointsPerPlayer(m).toFixed(2);
 
-  if (m.rank === 1) lines.push(`<strong>${shortName(m.name)}</strong> sits at the top of the lads with <strong>${m.total} pts</strong>.`);
-  else if (m.rank <= 3) lines.push(`<strong>${shortName(m.name)}</strong> is in the top three on <strong>${m.total} pts</strong>, snapping at the leader's heels.`);
-  else if (m.rank <= 6) lines.push(`<strong>${shortName(m.name)}</strong> is mid-table on <strong>${m.total} pts</strong> · respectable but unremarkable.`);
-  else if (m.rank <= 10) lines.push(`<strong>${shortName(m.name)}</strong> is languishing in <strong>${m.rank}${ord(m.rank)}</strong> with ${m.total} pts. The mediocrity is impressive in its way.`);
-  else lines.push(`<strong>${shortName(m.name)}</strong> is fighting for the wooden spoon in <strong>${m.rank}${ord(m.rank)}</strong>.`);
+  if (m.rank === 1) lines.push(`<strong>${shortName(m.name)}</strong> finished top of the league with <strong>${m.total} pts</strong>.`);
+  else if (m.rank <= 3) lines.push(`<strong>${shortName(m.name)}</strong> finished in the top three on <strong>${m.total} pts</strong>, snapping at the leader's heels.`);
+  else if (m.rank <= 6) lines.push(`<strong>${shortName(m.name)}</strong> finished mid-table on <strong>${m.total} pts</strong> · respectable but unremarkable.`);
+  else if (m.rank <= 10) lines.push(`<strong>${shortName(m.name)}</strong> finished in <strong>${m.rank}${ord(m.rank)}</strong> with ${m.total} pts. Could've been worse, could've been a lot better.`);
+  else lines.push(`<strong>${shortName(m.name)}</strong> finished near the bottom in <strong>${m.rank}${ord(m.rank)}</strong>.`);
+
+  // points per player commentary
+  lines.push(`Averaged <strong>${ppp} points per starting player per gameweek</strong>.`);
 
   // bench commentary
-  if (m.bench_total > 280) lines.push(`Has left a comical <strong>${m.bench_total} points</strong> on the bench — could've been a contender if he'd just played his XV.`);
+  if (m.bench_total > 280) lines.push(`Left a comical <strong>${m.bench_total} points</strong> on the bench — could've been a contender if he'd just played his XV.`);
   else if (m.bench_total < 200) lines.push(`Only <strong>${m.bench_total} bench points</strong> wasted — actually pays attention to fixtures, which is more than most can say.`);
 
-  // hits commentary
-  if (m.hits_total >= 60) lines.push(`Has thrown away a <strong>genuinely reckless ${m.hits_total} points</strong> in transfer hits. Couldn't sit still if his life depended on it.`);
+  // hits
+  if (m.hits_total >= 60) lines.push(`Threw away a <strong>genuinely reckless ${m.hits_total} points</strong> in transfer hits. Couldn't sit still if his life depended on it.`);
   else if (m.hits_total === 0) lines.push(`Took <strong>zero hits</strong> all season. Either disciplined or asleep at the wheel.`);
 
   // captain
@@ -882,10 +854,10 @@ function generateRoast(mid) {
   }
 
   // value
-  if (m.final_value >= 103) lines.push(`Squad worth <strong>£${m.final_value}m</strong> · proper transfer profiteer.`);
+  if (m.final_value >= 103) lines.push(`Final squad worth <strong>£${m.final_value}m</strong> · proper transfer profiteer.`);
 
-  // Kroupi link
-  if (m.name === KIERAN_NAME) lines.push(`Of course, the headline of his season is <strong>Kroupi Jr</strong>. He saw the future, and then benched it for 12 weeks. Genuinely Greek-tragedy stuff.`);
+  // Kroupi link for Kieran
+  if (m.name === KIERAN_NAME) lines.push(`Of course, the headline of his season is <strong>Kroupi Jr</strong>. Saw the future, then benched it. Genuinely Greek-tragedy stuff.`);
 
   // favourite player
   if (m.favourite_player) lines.push(`His most-loved pick: <strong>${m.favourite_player.name}</strong> (${m.favourite_player.gws} GWs in the squad).`);
@@ -893,8 +865,8 @@ function generateRoast(mid) {
   return lines.join(' ');
 }
 
-// Auto-select first manager
-selectManager(YOU_MID);
+// Default to the champion's page
+selectManager(LEADER_MID);
 
 // ========================================
 // H2H EXPLORER
@@ -905,13 +877,14 @@ function buildH2H() {
   const sel2 = document.getElementById('h2h-mgr2');
   sel1.innerHTML = opts;
   sel2.innerHTML = opts;
-  sel1.value = YOU_MID;
-  sel2.value = KIERAN_MID;
+  // Default to top 2
+  sel1.value = RANKED_MIDS[0];
+  sel2.value = RANKED_MIDS[1];
 
   function update() {
     const a = sel1.value, b = sel2.value;
     if (a === b) {
-      document.getElementById('h2h-result').innerHTML = `<div class="h2h-result-card"><p style="color:#888;text-align:center">Pick two different lads.</p></div>`;
+      document.getElementById('h2h-result').innerHTML = `<div class="h2h-result-card"><p style="color:#888;text-align:center">Pick two different managers.</p></div>`;
       return;
     }
     const rec = D.h2h[a][b];
@@ -969,10 +942,9 @@ function buildH2H() {
         const r = D.h2h[mid1][mid2];
         const total = r.w + r.d + r.l;
         const pct = total ? (r.w / total) : 0;
-        // color from red (low) to green (high)
         const r1 = Math.round(227 * (1 - pct));
         const g1 = Math.round(180 * pct);
-        const bg = `rgb(${r1}, ${g1}, 30, 0.6)`;
+        const bg = `rgba(${r1}, ${g1}, 30, 0.6)`;
         html += `<td style="background:${bg}; color:#fff" title="${r.w}W-${r.d}D-${r.l}L">${r.w}-${r.l}</td>`;
       }
     });
@@ -981,12 +953,12 @@ function buildH2H() {
   html += '</tbody></table>';
   tableEl.innerHTML = html;
 
-  // Biggest H2H humiliations
+  // Biggest beatdowns
   const beatdowns = [];
   RANKED_MIDS.forEach(mid1 => {
     MGRS[mid1].gw_history.forEach(h1 => {
       RANKED_MIDS.forEach(mid2 => {
-        if (mid1 >= mid2) return; // avoid duplicates
+        if (mid1 >= mid2) return;
         const h2 = MGRS[mid2].gw_history.find(g => g.gw === h1.gw);
         if (!h2) return;
         const margin = Math.abs(h1.pts - h2.pts);
@@ -1017,7 +989,7 @@ function generateH2HSummary(midA, midB, rec) {
   const ma = MGRS[midA], mb = MGRS[midB];
   const total = rec.w + rec.d + rec.l;
   const wPct = total ? Math.round(100 * rec.w / total) : 0;
-  let s = `<strong>${shortName(ma.name)}</strong> has won <strong>${rec.w}</strong> of ${total} weekly head-to-heads vs <strong>${shortName(mb.name)}</strong> (<strong>${wPct}%</strong>). `;
+  let s = `<strong>${shortName(ma.name)}</strong> won <strong>${rec.w}</strong> of ${total} weekly head-to-heads vs <strong>${shortName(mb.name)}</strong> (<strong>${wPct}%</strong>). `;
   if (rec.pf > rec.pa) s += `Aggregate score: <strong>${rec.pf}-${rec.pa}</strong> in their favour.`;
   else if (rec.pf < rec.pa) s += `Aggregate score: <strong>${rec.pa}-${rec.pf}</strong> against. `;
   else s += `Aggregate score level at <strong>${rec.pf}-${rec.pa}</strong>.`;
@@ -1040,19 +1012,19 @@ function buildNerd() {
   // Bench table
   const benchTable = document.getElementById('bench-table');
   benchTable.innerHTML = `<thead><tr><th>Manager</th><th class="right">Total bench pts</th><th class="right">Worst single GW</th><th class="right">Biggest single miss</th></tr></thead><tbody>${
-    RANKED_MIDS.slice().sort((a,b) => b.bench_total - a.bench_total === 0 ? 0 : MGRS[b].bench_total - MGRS[a].bench_total).map(mid => {
+    RANKED_MIDS.slice().sort((a,b) => MGRS[b].bench_total - MGRS[a].bench_total).map(mid => {
       const m = MGRS[mid];
       return `<tr><td class="name">${shortName(m.name)}</td><td class="right bad">${m.bench_total}</td><td class="right">${m.worst_bench_gw.bench} (GW${m.worst_bench_gw.gw})</td><td class="right">${m.biggest_bench_miss.player || '—'} ${m.biggest_bench_miss.pts ? `(${m.biggest_bench_miss.pts} in GW${m.biggest_bench_miss.gw})` : ''}</td></tr>`;
     }).join('')
   }</tbody>`;
 
-  // Hits ROI - estimate value of hits
+  // Hits ROI
   const hitsTable = document.getElementById('hits-roi-table');
   hitsTable.innerHTML = `<thead><tr><th>Manager</th><th class="right">Transfers</th><th class="right">Hits</th><th class="right">Net 5GW transfers</th><th class="right">ROI</th></tr></thead><tbody>${
     RANKED_MIDS.map(mid => {
       const m = MGRS[mid];
       const totalNet = m.transfer_log.reduce((s,t) => s + t.net_5gw, 0);
-      const roi = m.hits_total ? (totalNet - m.hits_total).toFixed(0) : totalNet.toFixed(0);
+      const roi = (totalNet - m.hits_total).toFixed(0);
       const roiClass = roi >= 0 ? 'good' : 'bad';
       return `<tr><td class="name">${shortName(m.name)}</td><td class="right">${m.transfers_total}</td><td class="right bad">-${m.hits_total}</td><td class="right">${totalNet >= 0 ? '+' : ''}${totalNet}</td><td class="right ${roiClass}">${roi >= 0 ? '+' : ''}${roi}</td></tr>`;
     }).join('')
@@ -1077,9 +1049,7 @@ function buildNerd() {
   // Transfers leaderboard
   const allTransfers = [];
   RANKED_MIDS.forEach(mid => {
-    MGRS[mid].transfer_log.forEach(t => {
-      allTransfers.push({ ...t, mid });
-    });
+    MGRS[mid].transfer_log.forEach(t => { allTransfers.push({ ...t, mid }); });
   });
   const bestTransfers = allTransfers.slice().sort((a,b) => b.net_5gw - a.net_5gw).slice(0, 8);
   const worstTransfers = allTransfers.slice().sort((a,b) => a.net_5gw - b.net_5gw).slice(0, 8);
@@ -1111,6 +1081,6 @@ function buildNerd() {
 }
 buildNerd();
 
-// Make functions accessible
+// Expose globals
 window.switchTab = switchTab;
 window.selectManager = selectManager;

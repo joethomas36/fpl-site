@@ -24,19 +24,19 @@
   <div class="masthead-inner">
     <div class="masthead-title">
       <h1>THE LADS</h1>
-      <div class="subtitle">2025/26 SEASON · LIVE BANTER CENTRE</div>
+      <div class="subtitle">2025/26 SEASON · FINAL WRAP-UP</div>
     </div>
     <div class="masthead-meta">
       <div class="meta-block">
-        <div class="meta-label">Gameweek</div>
+        <div class="meta-label">Final GW</div>
         <div class="meta-value" id="meta-gw">—</div>
       </div>
       <div class="meta-block">
-        <div class="meta-label">Leader</div>
+        <div class="meta-label">Champion</div>
         <div class="meta-value" id="meta-leader">—</div>
       </div>
       <div class="meta-block">
-        <div class="meta-label">Lads</div>
+        <div class="meta-label">Players</div>
         <div class="meta-value">13</div>
       </div>
     </div>
@@ -67,7 +67,7 @@
 
   <div class="grid-2">
     <div class="banter-card big-card">
-      <div class="card-eyebrow">CURRENT STANDINGS</div>
+      <div class="card-eyebrow">FINAL STANDINGS</div>
       <div id="mini-table"></div>
       <button class="ghost-btn" onclick="switchTab('table')">FULL TABLE →</button>
     </div>
@@ -101,7 +101,7 @@
   <div class="banter-card full-width">
     <div class="card-eyebrow">🎢 LEAGUE POSITION OVER TIME</div>
     <div class="chart-wrap-large"><canvas id="rank-chart"></canvas></div>
-    <div class="chart-caption">Lower is better. Tyler's been camped at the top — proper bullying.</div>
+    <div class="chart-caption">Lower is better. Tyler led from the front basically all season.</div>
   </div>
 
 </section>
@@ -109,7 +109,7 @@
 <!-- TABLE TAB -->
 <section class="tab-content" id="tab-table">
   <div class="banter-card full-width">
-    <div class="card-eyebrow">FULL LEAGUE TABLE · CLICK A LAD FOR THE FULL DOSSIER</div>
+    <div class="card-eyebrow">FULL LEAGUE TABLE · CLICK ANY ROW FOR THE FULL DOSSIER</div>
     <table class="full-table" id="full-league-table"></table>
   </div>
 
@@ -156,7 +156,7 @@
 <!-- AWARDS TAB -->
 <section class="tab-content" id="tab-awards">
   <div class="awards-intro">
-    <div class="awards-title">🏆 THE 2025/26 LADS AWARDS</div>
+    <div class="awards-title">🏆 THE 2025/26 AWARDS</div>
     <div class="awards-subtitle">A formal ceremony nobody asked for</div>
   </div>
   <div id="awards-grid"></div>
@@ -165,7 +165,7 @@
 <!-- MANAGERS TAB -->
 <section class="tab-content" id="tab-managers">
   <div class="manager-picker">
-    <div class="card-eyebrow">SELECT A LAD</div>
+    <div class="card-eyebrow">SELECT A MANAGER</div>
     <div id="manager-buttons"></div>
   </div>
   <div id="manager-detail"></div>
@@ -177,12 +177,12 @@
     <div class="card-eyebrow">⚔️ HEAD-TO-HEAD EXPLORER</div>
     <div class="h2h-pickers">
       <div class="h2h-side">
-        <label>LAD 1</label>
+        <label>MANAGER 1</label>
         <select id="h2h-mgr1" class="big-select"></select>
       </div>
       <div class="h2h-vs">VS</div>
       <div class="h2h-side">
-        <label>LAD 2</label>
+        <label>MANAGER 2</label>
         <select id="h2h-mgr2" class="big-select"></select>
       </div>
     </div>
@@ -194,7 +194,7 @@
     <div class="heatmap-scroll">
       <div id="h2h-heatmap"></div>
     </div>
-    <div class="chart-caption">Each cell = win % of row vs column. Darker green = more dominant.</div>
+    <div class="chart-caption">Each cell shows row's record (W-L) vs column. Darker green = more dominant.</div>
   </div>
 
   <div class="banter-card">
@@ -206,7 +206,7 @@
 <!-- NERD ZONE -->
 <section class="tab-content" id="tab-nerd">
   <div class="nerd-warning">
-    ⚠️ NERD ZONE · CONTAINS NUMBERS · NOT FOR THE CASUAL LADS
+    ⚠️ NERD ZONE · CONTAINS NUMBERS · ENTER AT OWN RISK
   </div>
 
   <div class="banter-card">
@@ -243,8 +243,8 @@
 </main>
 
 <footer class="footer-bar">
-  <div>THE LADS · 2025/26 · DATA THROUGH GW<span id="footer-gw">—</span></div>
-  <div class="footer-meta">Built with regret · Refresh after GW38 for final wrap-up</div>
+  <div>THE LADS · 2025/26 · SEASON COMPLETE · DATA THROUGH GW<span id="footer-gw">—</span></div>
+  <div class="footer-meta">That's a wrap. See you in August.</div>
 </footer>
 
 <!-- LIBS -->
